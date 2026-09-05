@@ -2,8 +2,11 @@ package com.member.system.module.points.service;
 
 import com.member.system.common.enums.PointsChangeType;
 import com.member.system.common.result.PageResult;
+import com.member.system.module.points.dto.PointsAdjustRequest;
+import com.member.system.module.points.dto.PointsConsumeRequest;
 import com.member.system.module.points.dto.PointsRecordQuery;
 import com.member.system.module.points.dto.PointsRecordVO;
+import com.member.system.module.points.dto.PointsRewardRequest;
 import com.member.system.module.points.entity.PointsRecord;
 
 /**
@@ -22,6 +25,12 @@ public interface PointsService {
      * @return 流水记录
      */
     PointsRecord changePoints(Long memberId, int amount, PointsChangeType changeType, String bizNo, String remark);
+
+    PointsRecordVO consume(Long memberId, PointsConsumeRequest request);
+
+    PointsRecordVO adjust(PointsAdjustRequest request);
+
+    PointsRecordVO reward(PointsRewardRequest request);
 
     int getBalance(Long memberId);
 

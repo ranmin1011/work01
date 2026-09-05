@@ -11,8 +11,11 @@ import com.member.system.module.member.entity.Member;
 import com.member.system.module.member.mapper.MemberMapper;
 import com.member.system.module.member.service.MemberService;
 import com.member.system.module.points.converter.PointsConverter;
+import com.member.system.module.points.dto.PointsAdjustRequest;
+import com.member.system.module.points.dto.PointsConsumeRequest;
 import com.member.system.module.points.dto.PointsRecordQuery;
 import com.member.system.module.points.dto.PointsRecordVO;
+import com.member.system.module.points.dto.PointsRewardRequest;
 import com.member.system.module.points.entity.PointsRecord;
 import com.member.system.module.points.mapper.PointsRecordMapper;
 import com.member.system.module.points.service.PointsService;
@@ -74,6 +77,36 @@ public class PointsServiceImpl implements PointsService {
 
         memberService.refreshLevel(memberId);
         return record;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public PointsRecordVO consume(Long memberId, PointsConsumeRequest request) {
+        BizAssert.notNull(request, ErrorCodes.POINTS_CHANGE_INVALID);
+        PointsRecord record = changePoints(memberId, -request.getAmount(), PointsChangeType.CONSUME,
+                request.getBizNo(), StringUtils.hasText(request.getRemark()) ? request.getRemark() : "积分消费");
+        return pointsConverter.toVO(record);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public PointsRecordVO adjust(PointsAdjustRequest request) {
+        BizAssert.notNull(request, ErrorCodes.POINTS_CHANGE_INVALID);
+        BizAssert.isTrue(request.getAmount() != null && request.getAmount() != 0, ErrorCodes.POINTS_CHANGE_INVALID);
+        PointsRecord record = changePoints(request.getMemberId(), request.getAmount(), PointsChangeType.ADJUST,
+                BizNoGenerator.pointsBizNo("ADJ"),
+                StringUtils.hasText(request.getRemark()) ? request.getRemark() : "人工调整");
+        return pointsConverter.toVO(record);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public PointsRecordVO reward(PointsRewardRequest request) {
+        BizAssert.notNull(request, ErrorCodes.POINTS_CHANGE_INVALID);
+        PointsRecord record = changePoints(request.getMemberId(), request.getAmount(), PointsChangeType.REWARD,
+                request.getBizNo(),
+                StringUtils.hasText(request.getRemark()) ? request.getRemark() : "活动奖励");
+        return pointsConverter.toVO(record);
     }
 
     @Override
