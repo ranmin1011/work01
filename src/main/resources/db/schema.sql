@@ -93,3 +93,37 @@ CREATE TABLE IF NOT EXISTS member_address (
     deleted         TINYINT      NOT NULL DEFAULT 0,
     KEY idx_address_member (member_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS coupon (
+    id                BIGINT         NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    coupon_code       VARCHAR(64)    NOT NULL,
+    coupon_name       VARCHAR(128)   NOT NULL,
+    coupon_type       VARCHAR(32)    NOT NULL,
+    threshold_amount  DECIMAL(12,2)  DEFAULT 0,
+    discount_amount   DECIMAL(12,2)  DEFAULT 0,
+    discount_rate     DECIMAL(5,2)   DEFAULT NULL,
+    total_count       INT            NOT NULL DEFAULT 0,
+    claimed_count     INT            NOT NULL DEFAULT 0,
+    per_member_limit  INT            NOT NULL DEFAULT 1,
+    valid_from        DATETIME       DEFAULT NULL,
+    valid_to          DATETIME       DEFAULT NULL,
+    status            TINYINT        NOT NULL DEFAULT 1,
+    created_at        DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted           TINYINT        NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_coupon_code (coupon_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS member_coupon (
+    id              BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    member_id       BIGINT       NOT NULL,
+    coupon_id       BIGINT       NOT NULL,
+    coupon_code     VARCHAR(64)  NOT NULL,
+    status          TINYINT      NOT NULL DEFAULT 10,
+    claimed_at      DATETIME     DEFAULT NULL,
+    used_at         DATETIME     DEFAULT NULL,
+    expire_at       DATETIME     DEFAULT NULL,
+    created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_mc_member (member_id),
+    KEY idx_mc_coupon (coupon_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
