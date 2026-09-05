@@ -1,47 +1,31 @@
 package com.member.system.module.level.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.member.system.common.exception.BizAssert;
-import com.member.system.common.exception.ErrorCodes;
+import com.member.system.module.level.dto.MemberLevelQuery;
+import com.member.system.module.level.dto.MemberLevelVO;
 import com.member.system.module.level.entity.MemberLevel;
-import com.member.system.module.level.mapper.MemberLevelMapper;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 /**
- * 等级服务最小实现（供注册使用，步骤18增强）
+ * 会员等级服务
  */
-@Service
-public class MemberLevelService {
+public interface MemberLevelService {
 
-    private final MemberLevelMapper memberLevelMapper;
+    List<MemberLevel> listEnabledLevels();
 
-    public MemberLevelService(MemberLevelMapper memberLevelMapper) {
-        this.memberLevelMapper = memberLevelMapper;
-    }
+    List<MemberLevelVO> listEnabledLevelVOs();
 
-    public List<MemberLevel> listEnabledLevels() {
-        return memberLevelMapper.selectList(new LambdaQueryWrapper<MemberLevel>()
-                .eq(MemberLevel::getStatus, 1)
-                .orderByAsc(MemberLevel::getSortOrder));
-    }
+    MemberLevel getById(Long levelId);
 
-    public MemberLevel getById(Long levelId) {
-        MemberLevel level = memberLevelMapper.selectById(levelId);
-        BizAssert.notNull(level, ErrorCodes.LEVEL_NOT_FOUND);
-        return level;
-    }
+    MemberLevelVO getVOById(Long levelId);
 
-    public MemberLevel matchLevelByTotalPoints(int totalPoints) {
-        List<MemberLevel> levels = listEnabledLevels();
-        BizAssert.notEmpty(levels, ErrorCodes.LEVEL_NOT_FOUND);
-        MemberLevel matched = levels.get(0);
-        for (MemberLevel level : levels) {
-            if (totalPoints >= level.getMinPoints()) {
-                matched = level;
-            }
-        }
-        return matched;
-    }
+    MemberLevel matchLevelByTotalPoints(int totalPoints);
+
+    void refreshMemberLevel(Long memberId);
+
+    MemberLevelVO createLevel(MemberLevel level);
+
+    void enableLevel(Long levelId, boolean enabled);
+
+    List<MemberLevelVO> queryLevels(MemberLevelQuery query);
 }
