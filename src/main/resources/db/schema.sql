@@ -127,3 +127,17 @@ CREATE TABLE IF NOT EXISTS member_coupon (
     KEY idx_mc_member (member_id),
     KEY idx_mc_coupon (coupon_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS member_message (
+    id              BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    member_id       BIGINT       NOT NULL,
+    message_type    VARCHAR(32)  NOT NULL,
+    title           VARCHAR(128) NOT NULL,
+    content         VARCHAR(1024) DEFAULT NULL,
+    read_flag       TINYINT      NOT NULL DEFAULT 0,
+    read_at         DATETIME     DEFAULT NULL,
+    created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted         TINYINT      NOT NULL DEFAULT 0,
+    KEY idx_msg_member (member_id),
+    KEY idx_msg_read (member_id, read_flag)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
