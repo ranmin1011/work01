@@ -1,41 +1,18 @@
-# 会员管理系统（脚手架）
+# 会员管理系统
 
-基于 Spring Boot 2.7 + MyBatis-Plus 的会员系统项目骨架，当前仅完成脚手架搭建，业务代码待后续迭代。
+基于 Spring Boot 2.7 + MyBatis-Plus + JWT 的会员管理系统，覆盖注册登录、等级、积分、签到、地址、优惠券、站内消息与管理端查询。
 
 ## 技术栈
 
-- Java 8
-- Spring Boot 2.7.18
-- MyBatis-Plus 3.5.5
-- MySQL 8
-- Lombok
-
-## 目录结构
-
-```text
-member-system
-├── pom.xml
-├── README.md
-└── src/main
-    ├── java/com/member/system
-    │   ├── MemberSystemApplication.java   # 启动类
-    │   ├── common/                        # 通用层（待实现）
-    │   ├── config/                        # 配置层（待实现）
-    │   └── module/
-    │       ├── member/                    # 会员模块（待实现）
-    │       ├── level/                     # 等级模块（待实现）
-    │       └── points/                    # 积分模块（待实现）
-    └── resources
-        ├── application.yml
-        ├── db/                            # SQL 脚本（待实现）
-        └── mapper/                        # Mapper XML（待实现）
-```
+- Java 8 / Spring Boot 2.7.18
+- MyBatis-Plus 3.5.5 / MySQL 8
+- JWT（jjwt）/ Springdoc OpenAPI / Lombok / AOP
 
 ## 环境要求
 
 - JDK 1.8+
 - Maven 3.6+
-- MySQL 8（本地默认库名 `member_db`）
+- MySQL 8（默认库名 `member_db`）
 
 ## 快速启动
 
@@ -47,21 +24,105 @@ CREATE DATABASE IF NOT EXISTS member_db DEFAULT CHARACTER SET utf8mb4;
 
 2. 修改 `src/main/resources/application.yml` 中的数据库账号密码。
 
-3. 启动项目：
+3. 启动：
 
 ```bash
 mvn spring-boot:run
 ```
 
-或在 IDE 中运行 `MemberSystemApplication`。
+4. 访问：
 
-4. 默认端口：`http://localhost:8080`
+| 用途 | 路径 |
+|------|------|
+| 服务端口 | http://localhost:8080 |
+| Swagger UI | http://localhost:8080/swagger-ui.html |
+| OpenAPI JSON | http://localhost:8080/v3/api-docs |
+| 健康检查 | GET `/health` |
+| Ping | GET `/ping` |
 
-> 说明：脚手架阶段尚未接入业务接口与表结构，启动后需先完成数据库与模块实现再验证接口。
+## 主要 API
 
-## 后续计划
+### 认证（无需 Token）
 
-1. 通用层：统一响应、全局异常、业务枚举
-2. 会员模块：注册 / 登录 / 资料
-3. 等级与积分模块
-4. 数据库脚本与 API 文档
+- `POST /auth/register` 注册
+- `POST /auth/login` 登录
+
+### 会员
+
+- `GET /members/me` 当前会员资料
+- `PUT /members/me` 更新资料
+
+### 等级（公开）
+
+- `GET /levels` 启用等级列表
+- `GET /levels/{id}` 等级详情
+- `GET/POST/PUT /admin/levels/**` 管理端等级
+
+### 积分
+
+- `GET /points/balance` 余额
+- `GET /points/records` 流水
+- `POST /points/consume` 消费
+- `POST /admin/points/adjust` 人工调整
+- `POST /admin/points/reward` 发放奖励
+
+### 签到
+
+- `POST /sign-in` 今日签到
+- `GET /sign-in/today` 签到状态
+- `GET /sign-in/records` 签到记录
+
+### 地址
+
+- `GET/POST /addresses` 列表 / 新增
+- `PUT/DELETE /addresses/{id}` 更新 / 删除
+- `GET/PUT /addresses/default` 默认地址
+
+### 优惠券
+
+- `GET /coupons/available` 可领取列表
+- `POST /coupons/claim` 领取
+- `GET /coupons/mine` 我的优惠券
+- `POST /coupons/redeem` 核销
+
+### 消息
+
+- `GET /messages` 消息分页
+- `GET /messages/unread-count` 未读数
+- `PUT /messages/{id}/read` 标记已读
+
+### 管理端会员
+
+- `GET /admin/members` 分页查询
+- `PUT /admin/members/{id}/enable` 启用
+- `PUT /admin/members/{id}/disable` 禁用
+
+> 除标注公开的接口外，请求头需携带：`Authorization: Bearer <token>`。
+
+## 模块结构
+
+```text
+com.member.system
+├── common/          # 响应、异常、枚举、JWT、鉴权
+├── config/          # Web / MyBatis / OpenAPI / 业务配置
+└── module/
+    ├── auth/        # 认证
+    ├── member/      # 会员与管理端
+    ├── level/       # 等级
+    ├── points/      # 积分
+    ├── signin/      # 签到
+    ├── address/     # 地址
+    ├── coupon/      # 优惠券
+    ├── message/     # 站内消息
+    ├── operlog/     # 操作日志
+    ├── event/       # 领域事件
+    └── health/      # 健康检查
+```
+
+## 配置说明
+
+`application.yml` 中 `member` 节点可配置：
+
+- `jwt.secret` / `jwt.expire-hours`
+- `points.register-bonus` / `points.sign-in-bonus`
+- `sign-in.continuous-cycle-days` / `sign-in.continuous-cycle-bonus`
