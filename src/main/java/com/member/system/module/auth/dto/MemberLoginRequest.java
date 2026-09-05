@@ -1,0 +1,18 @@
+package com.member.system.module.auth.dto;
+
+import lombok.Data;
+
+import javax.validation.constraints.NotBlank;
+
+/**
+ * 会员登录请求
+ */
+@Data
+public class MemberLoginRequest {
+
+    @NotBlank(message = "用户名不能为空")
+    private String username;
+
+    @NotBlank(message = "密码不能为空")
+    private String password;
+}
