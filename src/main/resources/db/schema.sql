@@ -60,3 +60,20 @@ CREATE TABLE IF NOT EXISTS member_sign_in (
     created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uk_member_sign_date (member_id, sign_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS oper_log (
+    id              BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    member_id       BIGINT       DEFAULT NULL,
+    module          VARCHAR(64)  DEFAULT NULL,
+    operation       VARCHAR(128) DEFAULT NULL,
+    method          VARCHAR(255) DEFAULT NULL,
+    request_uri     VARCHAR(255) DEFAULT NULL,
+    request_params  TEXT         DEFAULT NULL,
+    ip              VARCHAR(64)  DEFAULT NULL,
+    success         TINYINT      NOT NULL DEFAULT 1,
+    error_msg       VARCHAR(512) DEFAULT NULL,
+    cost_ms         BIGINT       DEFAULT NULL,
+    created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_oper_member (member_id),
+    KEY idx_oper_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

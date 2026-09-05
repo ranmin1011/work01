@@ -1,5 +1,6 @@
 package com.member.system.module.signin.controller;
 
+import com.member.system.common.annotation.OperLog;
 import com.member.system.common.auth.MemberContext;
 import com.member.system.common.result.ApiResult;
 import com.member.system.common.result.PageResult;
@@ -29,6 +30,7 @@ public class SignInController {
     }
 
     @Operation(summary = "今日签到")
+    @OperLog(module = "签到", value = "会员签到")
     @PostMapping
     public ApiResult<SignInResultVO> signIn() {
         return ApiResult.ok(signInService.signIn(MemberContext.getMemberId()), "签到成功");
