@@ -6,10 +6,12 @@ import com.member.system.common.auth.JwtUtil;
 import com.member.system.common.auth.TokenInfo;
 import com.member.system.common.constant.MemberConstants;
 import com.member.system.common.enums.MemberStatus;
+import com.member.system.common.enums.PointsChangeType;
 import com.member.system.common.enums.RegisterSource;
 import com.member.system.common.exception.BizAssert;
 import com.member.system.common.exception.ErrorCodes;
 import com.member.system.common.security.PasswordEncoder;
+import com.member.system.common.util.BizNoGenerator;
 import com.member.system.common.util.MemberNoGenerator;
 import com.member.system.config.MemberProperties;
 import com.member.system.module.auth.dto.LoginResponse;
@@ -23,6 +25,8 @@ import com.member.system.module.member.dto.MemberVO;
 import com.member.system.module.member.entity.Member;
 import com.member.system.module.member.mapper.MemberMapper;
 import com.member.system.module.member.service.MemberService;
+import com.member.system.module.points.dto.PointsGrantCommand;
+import com.member.system.module.points.facade.PointsFacade;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -41,19 +45,22 @@ public class MemberServiceImpl implements MemberService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final MemberProperties memberProperties;
+    private final PointsFacade pointsFacade;
 
     public MemberServiceImpl(MemberMapper memberMapper,
                              MemberLevelService memberLevelService,
                              MemberConverter memberConverter,
                              PasswordEncoder passwordEncoder,
                              JwtUtil jwtUtil,
-                             MemberProperties memberProperties) {
+                             MemberProperties memberProperties,
+                             PointsFacade pointsFacade) {
         this.memberMapper = memberMapper;
         this.memberLevelService = memberLevelService;
         this.memberConverter = memberConverter;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.memberProperties = memberProperties;
+        this.pointsFacade = pointsFacade;
     }
 
     @Override
@@ -85,6 +92,20 @@ public class MemberServiceImpl implements MemberService {
         RegisterSource source = RegisterSource.of(request.getRegisterSource());
         member.setRegisterSource(source == null ? MemberConstants.DEFAULT_REGISTER_SOURCE : source.getCode());
         memberMapper.insert(member);
+
+        int registerBonus = memberProperties.getPoints().getRegisterBonus();
+        if (registerBonus > 0) {
+            pointsFacade.grant(PointsGrantCommand.builder()
+                    .memberId(member.getId())
+                    .amount(registerBonus)
+                    .changeType(PointsChangeType.REGISTER)
+                    .bizNo(BizNoGenerator.pointsBizNo("REG"))
+                    .remark("注册赠送积分")
+                    .build());
+            member = requireMember(member.getId());
+            MemberLevel refreshedLevel = memberLevelService.getById(member.getLevelId());
+            return memberConverter.toVO(member, refreshedLevel);
+        }
         return memberConverter.toVO(member, defaultLevel);
     }
 
