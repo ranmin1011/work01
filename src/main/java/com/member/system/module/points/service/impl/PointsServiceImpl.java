@@ -19,6 +19,8 @@ import com.member.system.module.points.dto.PointsRewardRequest;
 import com.member.system.module.points.entity.PointsRecord;
 import com.member.system.module.points.mapper.PointsRecordMapper;
 import com.member.system.module.points.service.PointsService;
+import com.member.system.module.event.PointsChangedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,15 +36,18 @@ public class PointsServiceImpl implements PointsService {
     private final MemberMapper memberMapper;
     private final PointsConverter pointsConverter;
     private final MemberService memberService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public PointsServiceImpl(PointsRecordMapper pointsRecordMapper,
                              MemberMapper memberMapper,
                              PointsConverter pointsConverter,
-                             @Lazy MemberService memberService) {
+                             @Lazy MemberService memberService,
+                             ApplicationEventPublisher eventPublisher) {
         this.pointsRecordMapper = pointsRecordMapper;
         this.memberMapper = memberMapper;
         this.pointsConverter = pointsConverter;
         this.memberService = memberService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -75,6 +80,8 @@ public class PointsServiceImpl implements PointsService {
         record.setRemark(remark);
         pointsRecordMapper.insert(record);
 
+        eventPublisher.publishEvent(new PointsChangedEvent(this, memberId, amount, after,
+                changeType.getCode(), remark));
         memberService.refreshLevel(memberId);
         return record;
     }

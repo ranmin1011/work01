@@ -27,6 +27,9 @@ import com.member.system.module.member.mapper.MemberMapper;
 import com.member.system.module.member.service.MemberService;
 import com.member.system.module.points.dto.PointsGrantCommand;
 import com.member.system.module.points.facade.PointsFacade;
+import com.member.system.module.event.LevelUpgradedEvent;
+import com.member.system.module.event.MemberRegisteredEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -46,6 +49,7 @@ public class MemberServiceImpl implements MemberService {
     private final JwtUtil jwtUtil;
     private final MemberProperties memberProperties;
     private final PointsFacade pointsFacade;
+    private final ApplicationEventPublisher eventPublisher;
 
     public MemberServiceImpl(MemberMapper memberMapper,
                              MemberLevelService memberLevelService,
@@ -53,7 +57,8 @@ public class MemberServiceImpl implements MemberService {
                              PasswordEncoder passwordEncoder,
                              JwtUtil jwtUtil,
                              MemberProperties memberProperties,
-                             PointsFacade pointsFacade) {
+                             PointsFacade pointsFacade,
+                             ApplicationEventPublisher eventPublisher) {
         this.memberMapper = memberMapper;
         this.memberLevelService = memberLevelService;
         this.memberConverter = memberConverter;
@@ -61,6 +66,7 @@ public class MemberServiceImpl implements MemberService {
         this.jwtUtil = jwtUtil;
         this.memberProperties = memberProperties;
         this.pointsFacade = pointsFacade;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -92,6 +98,9 @@ public class MemberServiceImpl implements MemberService {
         RegisterSource source = RegisterSource.of(request.getRegisterSource());
         member.setRegisterSource(source == null ? MemberConstants.DEFAULT_REGISTER_SOURCE : source.getCode());
         memberMapper.insert(member);
+
+        eventPublisher.publishEvent(new MemberRegisteredEvent(this, member.getId(),
+                member.getUsername(), member.getMemberNo()));
 
         int registerBonus = memberProperties.getPoints().getRegisterBonus();
         if (registerBonus > 0) {
@@ -174,11 +183,14 @@ public class MemberServiceImpl implements MemberService {
     @Override
     public void refreshLevel(Long memberId) {
         Member member = requireMember(memberId);
+        Long fromLevelId = member.getLevelId();
         int totalPoints = member.getTotalPoints() == null ? 0 : member.getTotalPoints();
         MemberLevel matched = memberLevelService.matchLevelByTotalPoints(totalPoints);
         if (!matched.getId().equals(member.getLevelId())) {
             member.setLevelId(matched.getId());
             memberMapper.updateById(member);
+            eventPublisher.publishEvent(new LevelUpgradedEvent(this, memberId, fromLevelId,
+                    matched.getId(), matched.getLevelName()));
         }
     }
 }
