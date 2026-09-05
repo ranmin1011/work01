@@ -77,3 +77,19 @@ CREATE TABLE IF NOT EXISTS oper_log (
     KEY idx_oper_member (member_id),
     KEY idx_oper_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS member_address (
+    id              BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    member_id       BIGINT       NOT NULL,
+    receiver_name   VARCHAR(64)  NOT NULL,
+    receiver_mobile VARCHAR(20)  NOT NULL,
+    province        VARCHAR(64)  NOT NULL,
+    city            VARCHAR(64)  NOT NULL,
+    district        VARCHAR(64)  DEFAULT NULL,
+    detail_address  VARCHAR(255) NOT NULL,
+    is_default      TINYINT      NOT NULL DEFAULT 0,
+    created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted         TINYINT      NOT NULL DEFAULT 0,
+    KEY idx_address_member (member_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
