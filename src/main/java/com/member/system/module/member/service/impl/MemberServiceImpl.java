@@ -1,48 +1,59 @@
 package com.member.system.module.member.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.member.system.common.auth.JwtClaims;
+import com.member.system.common.auth.JwtUtil;
+import com.member.system.common.auth.TokenInfo;
 import com.member.system.common.constant.MemberConstants;
 import com.member.system.common.enums.MemberStatus;
 import com.member.system.common.enums.RegisterSource;
 import com.member.system.common.exception.BizAssert;
-import com.member.system.common.exception.BusinessException;
 import com.member.system.common.exception.ErrorCodes;
 import com.member.system.common.security.PasswordEncoder;
 import com.member.system.common.util.MemberNoGenerator;
+import com.member.system.config.MemberProperties;
+import com.member.system.module.auth.dto.LoginResponse;
+import com.member.system.module.auth.dto.MemberLoginRequest;
 import com.member.system.module.auth.dto.MemberRegisterRequest;
 import com.member.system.module.level.entity.MemberLevel;
 import com.member.system.module.level.service.MemberLevelService;
 import com.member.system.module.member.converter.MemberConverter;
+import com.member.system.module.member.dto.MemberProfileUpdateRequest;
 import com.member.system.module.member.dto.MemberVO;
 import com.member.system.module.member.entity.Member;
 import com.member.system.module.member.mapper.MemberMapper;
 import com.member.system.module.member.service.MemberService;
-import com.member.system.module.auth.dto.LoginResponse;
-import com.member.system.module.auth.dto.MemberLoginRequest;
-import com.member.system.module.member.dto.MemberProfileUpdateRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
+
 /**
- * 会员服务实现 —— 步骤14：注册
+ * 会员服务实现
  */
 @Service
 public class MemberServiceImpl implements MemberService {
 
-    protected final MemberMapper memberMapper;
-    protected final MemberLevelService memberLevelService;
-    protected final MemberConverter memberConverter;
-    protected final PasswordEncoder passwordEncoder;
+    private final MemberMapper memberMapper;
+    private final MemberLevelService memberLevelService;
+    private final MemberConverter memberConverter;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
+    private final MemberProperties memberProperties;
 
     public MemberServiceImpl(MemberMapper memberMapper,
                              MemberLevelService memberLevelService,
                              MemberConverter memberConverter,
-                             PasswordEncoder passwordEncoder) {
+                             PasswordEncoder passwordEncoder,
+                             JwtUtil jwtUtil,
+                             MemberProperties memberProperties) {
         this.memberMapper = memberMapper;
         this.memberLevelService = memberLevelService;
         this.memberConverter = memberConverter;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
+        this.memberProperties = memberProperties;
     }
 
     @Override
@@ -79,7 +90,27 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public LoginResponse login(MemberLoginRequest request) {
-        throw new BusinessException(ErrorCodes.MEMBER_NOT_FOUND, "登录能力在步骤15实现");
+        Member member = memberMapper.findByUsername(request.getUsername());
+        BizAssert.isTrue(member != null
+                        && passwordEncoder.matches(request.getPassword(), member.getPassword()),
+                ErrorCodes.PASSWORD_ERROR);
+        BizAssert.isTrue(MemberStatus.NORMAL.match(member.getStatus()), ErrorCodes.MEMBER_DISABLED);
+
+        member.setLastLoginAt(LocalDateTime.now());
+        memberMapper.updateById(member);
+
+        TokenInfo tokenInfo = jwtUtil.createTokenInfo(JwtClaims.builder()
+                .memberId(member.getId())
+                .username(member.getUsername())
+                .memberNo(member.getMemberNo())
+                .build());
+
+        return LoginResponse.builder()
+                .token(tokenInfo.getAccessToken())
+                .tokenType(MemberConstants.TOKEN_TYPE_BEARER)
+                .expireHours(memberProperties.getJwt().getExpireHours())
+                .member(getMemberVO(member.getId()))
+                .build();
     }
 
     @Override
@@ -90,8 +121,26 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public MemberVO updateProfile(Long memberId, MemberProfileUpdateRequest request) {
-        throw new BusinessException(ErrorCodes.MEMBER_PROFILE_INVALID, "资料更新在步骤15实现");
+        Member member = requireMember(memberId);
+        if (StringUtils.hasText(request.getNickname())) {
+            member.setNickname(request.getNickname());
+        }
+        if (request.getEmail() != null) {
+            member.setEmail(request.getEmail());
+        }
+        if (request.getAvatar() != null) {
+            member.setAvatar(request.getAvatar());
+        }
+        if (request.getGender() != null) {
+            member.setGender(request.getGender());
+        }
+        if (request.getBirthday() != null) {
+            member.setBirthday(request.getBirthday());
+        }
+        memberMapper.updateById(member);
+        return getMemberVO(memberId);
     }
 
     @Override
