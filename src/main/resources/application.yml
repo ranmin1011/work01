@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: member-system
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/member_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
@@ -20,6 +24,20 @@ mybatis-plus:
       logic-delete-value: 1
       logic-not-delete-value: 0
 
+member:
+  jwt:
+    secret: member-system-jwt-secret-key-change-me
+    expire-hours: 24
+    token-prefix: "Bearer "
+  points:
+    register-bonus: 100
+    sign-in-bonus: 10
+  sign-in:
+    continuous-cycle-days: 7
+    continuous-cycle-bonus: 5
+
 logging:
   level:
     com.member.system: info
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
